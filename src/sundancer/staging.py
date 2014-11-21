@@ -1,5 +1,6 @@
 import random, glob, os, hashlib
 from sundancer.conf.settings import NODE_COPIES, STAGING_DIR, NODE_DIRS
+from sundancer.conf.settings import STAGING_SERVER
 
 """
 Deals with operates related to staging content for replication into DPN.
@@ -24,7 +25,37 @@ def list_bagnames():
         bag_list.append(os.path.basename(file))
     return bag_list
 
-def make_bag_symlink(node, filename):
+def baginfo_list():
+    bag_list = []
+    for file in glob.glob("%s/*.tar" % STAGING_DIR):
+        name = os.path.basename(file)
+        info = os.stat(file)
+        data = {
+            "id": name.split(".")[0],
+            "checksum": get_sha256(name),
+            "name": name,
+            "size": info.st_size,
+        }
+        bag_list.append(data)
+    return bag_list
+
+def make_rsync_link(node, filename):
+    """
+    Returns an rsync link to a bag in a particular nodes staging area.
+    :param node: String of node namespace
+    :param filename: String of filename to create a link for.
+    :return:  String of the rsync link to use.
+    """
+    n = NODE_DIRS[node]
+    link = "%s@%s:%s%s" % (
+        n['USERNAME'],
+        STAGING_SERVER,
+        n['CONTENT_PATH'],
+        filename
+    )
+    return link
+
+def make_bag_symlink(node, filename, alt_id=None):
     """
     Creates a symlink in the outbound directory for the named node for the
     staged bag file provided.
@@ -33,9 +64,13 @@ def make_bag_symlink(node, filename):
     :param filename: String basename of bag file.
     :return:
     """
+    bagname = filename
+    linkname = bagname
     try:
-        src = os.path.join(STAGING_DIR, filename)
-        dest = os.path.join(NODE_DIRS[node]['CONTENT_DIR'], filename)
+        src = os.path.join(STAGING_DIR, bagname)
+        if alt_id: # fudge method to allow me to reuse sample bags.
+            linkname = "%s.tar" % alt_id
+        dest = os.path.join(NODE_DIRS[node]['CONTENT_DIR'], linkname)
         dest = os.path.normpath(dest)
         os.symlink(src, dest)
     except FileExistsError:
