@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 from http.client import HTTPSConnection, HTTPConnection
 from urllib.parse import urlencode
 
+from sundancer.conf.settings import API_SUBDIR
+
 class APIException(Exception):
     pass
 
@@ -33,21 +35,19 @@ class APIClient:
         else:
             raise APIException("Invalid url scheme supplied: %s" % url.scheme)
 
-        if url.port:
-            port = url.port
-
         self.conn = conn(url.netloc)
 
     ##*** NODE Methods ***##
     def get_node_list(self, filters=None):
 
-        url = "/api-v1/node/"
+        url = "%s/api-v1/node/" % API_SUBDIR
         if filters:
             url = "%s?%s" % (url, urlencode(filters))
         self.conn.request('GET', url, headers=self.headers)
         rsp = self.conn.getresponse()
+        data = rsp.read()
         if rsp.status == 200:
-            data = json.loads(rsp.read().decode('utf-8'))
+            data = json.loads(data.decode('utf-8'))
             return data
         return None
 
@@ -60,7 +60,7 @@ class APIClient:
         :return: Dict of return.
         """
         data = json.dumps(reg)
-        url = "/api-v1/registry/"
+        url = "%s/api-v1/registry/" % API_SUBDIR
         self.conn.request('POST', url, body=data, headers=self.headers)
         rsp = self.conn.getresponse()
         if rsp.status == 201:
@@ -76,7 +76,7 @@ class APIClient:
         :return: Data of return.
         """
         data = json.dumps(data)
-        url = "/api-v1/transfer/"
+        url = "%s/api-v1/transfer/" % API_SUBDIR
         self.conn.request('POST', url, body=data, headers=self.headers)
         rsp = self.conn.getresponse()
         if rsp.status == 201:

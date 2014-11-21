@@ -1,7 +1,8 @@
 # API ADMIN account token for your local api server.
 API_KEY = ""
-# local API server root url
+# local API server info
 API_URL = "" # 'http://localhost:8000'
+API_SUBDIR = '/dpnode' # if under a subdir '/dpnode'
 # My own node namespace
 NAMESPACE = "aptrust"
 
